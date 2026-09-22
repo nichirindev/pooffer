@@ -55,6 +55,12 @@
       <select id="cSel"><option value="0" selected>Black lines</option><option value="3">Color ×3</option><option value="4">Color ×4</option><option value="6">Color ×6</option><option value="8">Color ×8</option><option value="10">Color ×10</option><option value="12">Color ×12</option><option value="16">Color ×16</option><option value="20">Color ×20</option><option value="24">Color ×24</option><option value="32">Color ×32</option></select>
       <button id="renderBtn" style="flex:1">▶ Render</button>
     </div>
+    <div class="row">
+      <label class="lbl">Fit</label>
+      <select id="fSel"><option value="seg" selected>Segments (lines/curves)</option><option value="trig">Trigonometry (Fourier series)</option></select>
+      <label class="lbl">Harmonics</label>
+      <select id="hSel"><option value="4">4</option><option value="6">6</option><option value="8" selected>8</option><option value="12">12</option><option value="16">16</option></select>
+    </div>
     <div class="progress"><div id="bar"></div></div>
     <div class="hint" id="status">Samples the same continuous field as the 2000×1200 native grid (endpoints match, so full width reproduces native pixels exactly).</div>
     <div style="height:10px"></div>
@@ -125,6 +131,7 @@ Art: Hamid Naderi Yeganeh.</textarea>
 
 <script src="js/image-processing.js"></script>
 <script src="js/math-engine.js"></script>
+<script src="js/trig-fit.js"></script>
 <script src="js/export.js"></script>
 <script src="js/math-art-village.js"></script>
 <script>
@@ -272,7 +279,7 @@ Art: Hamid Naderi Yeganeh.</textarea>
   $("modeSel").addEventListener("change", () => {
     if ($("modeSel").value === "trace") {
       $("eqDef").value = refImg
-        ? "Press Render — contours get fitted to lines/circles/Béziers and drawn razor-sharp at full render width. The Desmos-pasteable equations appear here."
+        ? "Press Render — contours get fitted to segments or Fourier trig series and drawn razor-sharp at full render width. The Desmos-pasteable equations appear here."
         : "Upload an image first (section 1) — Render will trace it to vector curves and draw it sharp at hi-res.";
     } else {
       $("eqDef").value = villageEqText;
@@ -341,24 +348,38 @@ Art: Hamid Naderi Yeganeh.</textarea>
       }
       // fit curves per layer (largest regions first paint first)
       let equations = [], nContours = 0;
+      const trigMode = $("fSel").value === "trig";
+      const harmonics = +$("hSel").value;
+      const TRIG_BUDGET = fine ? 160 : 80;
       layers.forEach((L, li) => {
         nContours += L.contoursNorm.length;
-        const res = ME.processContours(L.contoursNorm, {
-          mode: "outline", tolerance: tol, maxEquations: perLayerMax,
-          preferCurves: true, colorHex: L.color, layer: li,
-        });
-        equations.push(...res.equations);
+        if (trigMode) {
+          // one Fourier trig line per closed loop (compact, not thousands)
+          const res = TF.contoursToTrig(L.contoursNorm, {
+            harmonics, samples: fine ? 192 : 128, maxCurves: TRIG_BUDGET,
+            colorHex: L.color, layer: li,
+          });
+          equations.push(...res.equations);
+        } else {
+          const res = ME.processContours(L.contoursNorm, {
+            mode: "outline", tolerance: tol, maxEquations: perLayerMax,
+            preferCurves: true, colorHex: L.color, layer: li,
+          });
+          equations.push(...res.equations);
+        }
       });
+      if (trigMode && equations.length > TRIG_BUDGET) equations.length = TRIG_BUDGET;
       if (!equations.length) throw new Error("Curve fitting found nothing — try Fine detail.");
       // equation box: same single-box Desmos text as the converter
       const text = equations.map((e) => EX.equationToDesmos(e, { plain: true })).join("\n");
+      const kind = trigMode ? `Fourier trig equations (${harmonics} harmonics each)` : `vector equations`;
       $("eqDef").value = text +
-        `\n\n// ${equations.length} vector equations from ${nContours} contours — paste whole box into Desmos, or admire the hi-res render above`;
+        `\n\n// ${equations.length} ${kind} from ${nContours} contours — paste whole box into Desmos, or admire the hi-res render above`;
       setStatus("Drawing vectors…"); setBar(0.8); await tick();
       drawEquations(equations, layers, w, h);
       setBar(1);
       const palette = layers.map((L) => L.color).filter(Boolean);
-      setStatus(`Done — ${nContours} contours → ${equations.length} razor-sharp vector curves at ${Wp}×${Hp}.` +
+      setStatus(`Done — ${nContours} contours → ${equations.length} ${trigMode ? "trig curves" : "razor-sharp vector curves"} at ${Wp}×${Hp}.` +
         (palette.length ? ` Palette: ${palette.join(" ")}` : ""));
       artReady = true;
       paintRef();
@@ -419,6 +440,19 @@ Art: Hamid Naderi Yeganeh.</textarea>
           i === 0 ? ctx.moveTo(X(x), Y(y)) : ctx.lineTo(X(x), Y(y));
         }
         ctx.stroke();
+      } else if (e.type === "trig") {
+        // Fourier series: sample the closed trig curve
+        for (let i = 0; i <= 160; i++) {
+          const t = i / 160, a = 2 * Math.PI * t;
+          let x = e.x0, y = e.y0;
+          for (const tm of e.terms) {
+            const w = tm.n * a;
+            x += tm.ax * Math.cos(w) + tm.bx * Math.sin(w);
+            y += tm.ay * Math.cos(w) + tm.by * Math.sin(w);
+          }
+          i === 0 ? ctx.moveTo(X(x), Y(y)) : ctx.lineTo(X(x), Y(y));
+        }
+        ctx.closePath(); ctx.stroke();
       } else if (e.type === "polygon") {
         e.points.forEach((p, i) => (i === 0 ? ctx.moveTo(X(p.x), Y(p.y)) : ctx.lineTo(X(p.x), Y(p.y))));
         ctx.closePath(); ctx.fill(); ctx.stroke();

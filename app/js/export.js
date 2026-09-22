@@ -67,6 +67,29 @@ function polygonToDesmosPlain(pts) {
   return `polygon(${pts.map((p) => `(${fmt(p.x)},${fmt(p.y)})`).join(",")})`;
 }
 
+// Fourier trig curve: one parametric line per contour.
+// (x0+SUM ax_n*cos(2*pi*n*t)+bx_n*sin(...), y0+SUM ...) {0<=t<=1}
+function trigToDesmosPlain(eq) {
+  const build = (base, getA, getB) => {
+    let s = fmt(base);
+    for (const tm of eq.terms) {
+      const a = getA(tm), b = getB(tm);
+      if (Math.abs(a) >= 5e-5) {
+        const t = `${fmt(a)}*cos(2*pi*${tm.n}*t)`;
+        s += t[0] === "-" ? t : "+" + t;
+      }
+      if (Math.abs(b) >= 5e-5) {
+        const t = `${fmt(b)}*sin(2*pi*${tm.n}*t)`;
+        s += t[0] === "-" ? t : "+" + t;
+      }
+    }
+    return s;
+  };
+  const X = build(eq.x0, (tm) => tm.ax, (tm) => tm.bx);
+  const Y = build(eq.y0, (tm) => tm.ay, (tm) => tm.by);
+  return `(${X},${Y}) {0<=t<=1}`;
+}
+
 function equationToDesmos(eq, opts) {
   const plain = !(opts && opts.latex);
   switch (eq.type) {
@@ -76,6 +99,7 @@ function equationToDesmos(eq, opts) {
     case "bezier": return bezierToDesmos(eq, plain);
     case "polygon": return plain ? polygonToDesmosPlain(eq.points) : polygonToDesmos(eq.points);
     case "parametric": return `(${eq.x},${eq.y}) {0<=t<=1}`;
+    case "trig": return trigToDesmosPlain(eq);
     default: return "";
   }
 }
@@ -114,7 +138,7 @@ function buildProjectFile(settings, layers, equations, stats) {
 
 const EX = {
   fmt, equationToDesmos, equationsToText, buildProjectFile, contoursToImplicitFormula,
-  polygonToDesmosPlain, bezierToDesmos, lineToDesmosPlain, circleToDesmos,
+  polygonToDesmosPlain, bezierToDesmos, lineToDesmosPlain, circleToDesmos, trigToDesmosPlain,
 };
 if (typeof module !== "undefined" && module.exports) module.exports = EX;
 if (typeof window !== "undefined") window.EX = EX;
