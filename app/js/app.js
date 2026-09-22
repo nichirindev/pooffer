@@ -11,12 +11,11 @@
     mode: "outline",
     settings: {},
     layers: [],          // {color, contoursNorm, contoursPx}
-    equations: [],       // IR + {desmos, visible}
-    hidden: new Set(),
+    equations: [],       // IR + {desmos}
     intermediates: {},   // canvases per stage
     procW: 0, procH: 0,
     stats: {},
-    stage: "final",
+    stage: "original",
   };
 
   function readSettings() {
@@ -302,10 +301,8 @@
 
       if (!equations.length) throw new Error("Curve fitting produced no equations. Lower curve tolerance or raise max equations.");
       equations = equations.slice(0, budget);
-      equations.forEach((e, i) => { e.id = i; e.desmos = EX.equationToDesmos(e, { plain: true }); e.visible = !state.hidden.has(i); });
+      equations.forEach((e, i) => { e.id = i; e.desmos = EX.equationToDesmos(e, { plain: true }); });
       state.equations = equations;
-      // reindex hidden set
-      state.hidden.clear();
 
       const t1 = performance.now();
       const err = totalIn ? 1 - totalSimp / totalIn : 0;
@@ -316,9 +313,9 @@
         error: err, similarity: sim, threshold: threshVal,
       };
 
-      setBar(1); setStatus(`Done in ${state.stats.ms} ms — ${nContours} contours → ${equations.length} equations.`);
-      state.stage = "final";
-      document.querySelectorAll("#stageTabs .tab").forEach((x) => x.classList.toggle("active", x.dataset.stage === "final"));
+      setBar(1); setStatus(`Done in ${state.stats.ms} ms — ${nContours} contours → ${equations.length} equations. Copy the box on the right and paste into Desmos.`);
+      state.stage = "contours";
+      document.querySelectorAll("#stageTabs .tab").forEach((x) => x.classList.toggle("active", x.dataset.stage === "contours"));
       renderAll();
       $("process").disabled = false;
     } catch (err) {
@@ -355,73 +352,14 @@
     fitCanvas();
     const W = preview.width, H = preview.height;
     ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, W, H);
-    if (state.stage === "final") { renderGraph(); return; }
-    const c = state.intermediates[state.stage === "gray" ? "gray" : state.stage === "thresh" ? "thresh" : state.stage === "edges" ? "edges" : state.stage === "contours" ? "contours" : "original"];
+    const key = state.stage === "gray" ? "gray" : state.stage === "thresh" ? "thresh" : state.stage === "edges" ? "edges" : state.stage === "contours" ? "contours" : "original";
+    const c = state.intermediates[key];
     if (!c) { ctx.fillStyle = "#93a1b8"; ctx.font = "14px sans-serif"; ctx.fillText("Process an image to see this stage.", 20, 30); return; }
     // contain
     const sc = Math.min(W / c.width, H / c.height);
     const dw = c.width * sc, dh = c.height * sc;
     ctx.imageSmoothingEnabled = true;
     ctx.drawImage(c, (W - dw) / 2, (H - dh) / 2, dw, dh);
-  }
-
-  function graphTransform(W, H) {
-    const R = 11; // half-range with margin
-    const sc = Math.min(W, H) / (2 * R);
-    return {
-      X: (x) => W / 2 + x * sc,
-      Y: (y) => H / 2 - y * sc,
-      sc,
-    };
-  }
-
-  function renderGraph() {
-    const W = preview.width, H = preview.height;
-    const { X, Y, sc } = graphTransform(W, H);
-    // grid
-    ctx.strokeStyle = "#e5e9f0"; ctx.lineWidth = 1;
-    const step = sc >= 60 ? 1 : sc >= 28 ? 2 : 5;
-    for (let gx = -10; gx <= 10; gx += step) {
-      ctx.beginPath(); ctx.moveTo(X(gx), 0); ctx.lineTo(X(gx), H); ctx.stroke();
-    }
-    for (let gy = -10; gy <= 10; gy += step) {
-      ctx.beginPath(); ctx.moveTo(0, Y(gy)); ctx.lineTo(W, Y(gy)); ctx.stroke();
-    }
-    // axes
-    ctx.strokeStyle = "#94a3b8"; ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.moveTo(0, Y(0)); ctx.lineTo(W, Y(0)); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(X(0), 0); ctx.lineTo(X(0), H); ctx.stroke();
-
-    const vis = state.equations.filter((e) => !state.hidden.has(e.id));
-    for (const e of vis) {
-      ctx.strokeStyle = e.color || "#111827";
-      ctx.fillStyle = e.color ? e.color + "55" : "rgba(17,24,39,.08)";
-      ctx.lineWidth = Math.max(1.2, sc * 0.02);
-      if (e.type === "line") {
-        ctx.beginPath(); ctx.moveTo(X(e.x1), Y(e.y1)); ctx.lineTo(X(e.x2), Y(e.y2)); ctx.stroke();
-      } else if (e.type === "circle") {
-        ctx.beginPath(); ctx.arc(X(e.h), Y(e.k), e.r * sc, 0, Math.PI * 2); ctx.stroke();
-      } else if (e.type === "ellipse") {
-        ctx.beginPath(); ctx.ellipse(X(e.h), Y(e.k), e.a * sc, e.b * sc, 0, 0, Math.PI * 2); ctx.stroke();
-      } else if (e.type === "bezier") {
-        ctx.beginPath();
-        for (let i = 0; i <= 24; i++) {
-          const t = i / 24, u = 1 - t;
-          const x = u*u*u*e.p0.x + 3*u*u*t*e.p1.x + 3*u*t*t*e.p2.x + t*t*t*e.p3.x;
-          const y = u*u*u*e.p0.y + 3*u*u*t*e.p1.y + 3*u*t*t*e.p2.y + t*t*t*e.p3.y;
-          i === 0 ? ctx.moveTo(X(x), Y(y)) : ctx.lineTo(X(x), Y(y));
-        }
-        ctx.stroke();
-      } else if (e.type === "polygon") {
-        ctx.beginPath();
-        e.points.forEach((p, i) => (i === 0 ? ctx.moveTo(X(p.x), Y(p.y)) : ctx.lineTo(X(p.x), Y(p.y))));
-        ctx.closePath(); ctx.fill(); ctx.stroke();
-      }
-    }
-    if (!vis.length && state.equations.length) {
-      ctx.fillStyle = "#64748b"; ctx.font = "14px sans-serif";
-      ctx.fillText("All equations hidden — toggle 👁 in the list.", 16, 24);
-    }
   }
 
   function renderAll() {
@@ -432,7 +370,7 @@
     $("sTime").textContent = `${state.stats.ms} ms`;
     $("sError").textContent = state.stats.error.toFixed(3);
     $("sSim").textContent = Math.round(state.stats.similarity * 100) + "%";
-    renderStage(); renderEqList();
+    renderStage(); renderSingleBox();
     const has = state.equations.length > 0;
     $("copyAll").disabled = !has;
     $("dlTxt").disabled = !has;
@@ -441,36 +379,23 @@
     $("exportTop").disabled = !has;
   }
 
-  function renderEqList() {
-    const box = $("eqList"); box.innerHTML = "";
+  function renderSingleBox() {
+    const box = $("eqBox");
     $("eqCount").textContent = `(${state.equations.length})`;
-    const N = Math.min(state.equations.length, 600);
-    for (let i = 0; i < N; i++) {
-      const e = state.equations[i];
-      const div = document.createElement("div"); div.className = "eq";
-      const hid = state.hidden.has(e.id);
-      div.style.opacity = hid ? 0.45 : 1;
-      div.innerHTML = `<div class="meta"><span class="badge ${e.type}">${e.type}</span>` +
-        (e.color ? `<span class="dot" style="background:${e.color}"></span><span style="color:var(--muted)">${e.color}</span>` : "") +
-        `<span style="flex:1"></span></div><code></code><div class="meta"></div>`;
-      div.querySelector("code").textContent = e.desmos;
-      const meta = div.querySelectorAll(".meta")[1];
-      const btnEye = document.createElement("button"); btnEye.className = "ghost small"; btnEye.textContent = hid ? "👁‍🗨" : "👁";
-      btnEye.onclick = () => { hid ? state.hidden.delete(e.id) : state.hidden.add(e.id); renderStage(); renderEqList(); };
-      const btnCopy = document.createElement("button"); btnCopy.className = "ghost small"; btnCopy.textContent = "Copy";
-      btnCopy.onclick = () => copyText(e.desmos, () => { btnCopy.textContent = "✓"; setTimeout(() => (btnCopy.textContent = "Copy"), 900); });
-      meta.append(btnEye, btnCopy);
-      box.append(div);
+    if (!state.equations.length) {
+      box.value = "";
+      box.placeholder = "No equations yet — process an image first.";
+      $("eqInfo").textContent = "–";
+      return;
     }
-    if (state.equations.length > N) {
-      const d = document.createElement("div"); d.className = "hint";
-      d.textContent = `…and ${state.equations.length - N} more (included in Copy all / downloads).`;
-      box.append(d);
-    }
+    const text = state.equations.map((e) => e.desmos).join("\n");
+    box.value = text;
+    const chars = text.length;
+    $("eqInfo").textContent = `${state.equations.length} lines · ${chars.toLocaleString()} chars · paste whole box into Desmos at once`;
   }
 
-  /* ---------- export ---------- */
-  function visibleEquations() { return state.equations.filter((e) => !state.hidden.has(e.id)); }
+  /* ---------- export: single box ---------- */
+  function boxText() { return $("eqBox").value || ""; }
 
   function copyText(text, done) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -486,12 +411,16 @@
   }
 
   function copyAll() {
-    const eqs = visibleEquations();
-    if (!eqs.length) { setStatus("All equations hidden — nothing to copy."); return; }
-    const text = eqs.map((e) => e.desmos).join("\n");
-    copyText(text, () => setStatus(`Copied ${eqs.length} equations. Paste line-by-line into Desmos.`));
+    const text = boxText();
+    if (!text) { setStatus("Nothing to copy — process an image first."); return; }
+    const n = state.equations.length;
+    copyText(text, () => {
+      setStatus(`Copied ${n} lines. Paste once into Desmos — it splits into lines.`);
+      $("eqBox").select();
+    });
   }
   $("copyAll").addEventListener("click", copyAll);
+  $("eqBox").addEventListener("click", (e) => { e.target.select(); });
 
   function download(name, text, mime) {
     const a = document.createElement("a");
@@ -499,8 +428,8 @@
     a.download = name; a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 2000);
   }
-  $("dlTxt").addEventListener("click", () => download("desmos-equations.txt", visibleEquations().map((e) => e.desmos).join("\n")));
-  $("dlJson").addEventListener("click", () => download("desmos-equations.json", JSON.stringify({ equations: visibleEquations().map((e) => e.desmos), stats: state.stats }, null, 2), "application/json"));
+  $("dlTxt").addEventListener("click", () => download("desmos-equations.txt", boxText()));
+  $("dlJson").addEventListener("click", () => download("desmos-equations.json", JSON.stringify({ equations: boxText().split("\n"), stats: state.stats }, null, 2), "application/json"));
   $("dlProj").addEventListener("click", () => download("project.desmosimg", EX.buildProjectFile(state.settings, state.layers.map((l) => ({ color: l.color })), state.equations, state.stats), "application/json"));
 
   fitCanvas();

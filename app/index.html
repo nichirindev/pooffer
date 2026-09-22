@@ -63,12 +63,11 @@
     <div class="hint" id="status">Upload an image to begin. Everything runs locally in your browser.</div>
   </section>
 
-  <!-- CENTER: preview -->
+  <!-- CENTER: preview (image pipeline only, no math rendering) -->
   <section class="card">
-    <h2>Graph preview</h2>
+    <h2>Preview</h2>
     <div class="tabs" id="stageTabs">
-      <div class="tab active" data-stage="final">Final</div>
-      <div class="tab" data-stage="original">Original</div>
+      <div class="tab active" data-stage="original">Original</div>
       <div class="tab" data-stage="gray">Grayscale</div>
       <div class="tab" data-stage="thresh">Threshold</div>
       <div class="tab" data-stage="edges">Edges</div>
@@ -84,32 +83,33 @@
       <div class="stat"><small>Similarity</small><b id="sSim">–</b></div>
     </div>
     <h2 style="margin-top:14px">Processing pipeline</h2>
-    <div class="hint">Original → Edges → Contours → Curves → <b>Desmos equations</b>. Switch tabs above to see what the algorithm is doing at each step.</div>
+    <div class="hint">Original → Grayscale → Threshold → Edges → Contours → <b>Desmos equation box</b> (right). No in-app graph — paste the box into Desmos manually.</div>
   </section>
 
-  <!-- RIGHT: equations + export -->
+  <!-- RIGHT: single equation box -->
   <section class="card">
-    <h2>Equations <span id="eqCount" style="color:#fff"></span></h2>
+    <h2>Desmos equation <span id="eqCount" style="color:#fff"></span></h2>
     <div class="toolbar">
       <button class="small" id="copyAll" disabled>Copy all</button>
       <button class="ghost small" id="dlTxt" disabled>.txt</button>
       <button class="ghost small" id="dlJson" disabled>.json</button>
       <button class="ghost small" id="dlProj" disabled>.desmosimg</button>
     </div>
-    <div class="hint" style="margin:8px 0">Paste-ready format: <code>y=... {a&lt;=x&lt;=b}</code>, circles, <code>(x(t),y(t)) {0&lt;=t&lt;=1}</code>, <code>polygon(...)</code>.</div>
-    <div id="eqList"><div class="hint">No equations yet — process an image first.</div></div>
+    <div class="hint" style="margin:8px 0">Single box — paste the whole thing into Desmos at <code>desmos.com/calculator</code> (it splits into lines). Format: <code>y=... {a&lt;=x&lt;=b}</code>, circles, <code>(x(t),y(t)) {0&lt;=t&lt;=1}</code>, <code>polygon(...)</code>.</div>
+    <textarea id="eqBox" readonly placeholder="No equations yet — process an image first."></textarea>
+    <div class="hint" id="eqInfo">–</div>
     <h2 style="margin-top:14px">How to paste into Desmos</h2>
     <ol class="hint">
-      <li>Click <b>Copy all</b> (or copy individual equations).</li>
+      <li>Click <b>Copy all</b>.</li>
       <li>Open <b>desmos.com/calculator</b>.</li>
-      <li>Click the first empty expression line and <b>paste (Ctrl+V)</b> — repeat per line, or paste a few at a time.</li>
-      <li>For <b>Color</b> mode: select each pasted line's color dot and match the swatch shown.</li>
+      <li>Click the first empty expression line and <b>paste (Ctrl+V)</b> — Desmos creates one line per row.</li>
+      <li>For <b>Color</b> mode: select each pasted line's color dot and match the hex shown at the end of the line's layer (see .txt download for color map).</li>
       <li>Zoom out / press <b>⌂</b> — art lives in −10…10.</li>
     </ol>
   </section>
 </main>
 
-<footer>Local-first · no uploads · contours → RDP → line/circle/Bézier fit → Desmos export</footer>
+<footer>Local-first · no uploads · contours → RDP → line/circle/Bézier fit → single Desmos box (paste manually)</footer>
 
 <script src="js/image-processing.js"></script>
 <script src="js/math-engine.js"></script>
