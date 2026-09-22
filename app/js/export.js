@@ -80,7 +80,30 @@ function equationToDesmos(eq, opts) {
   }
 }
 
-// opts: {plain:true} -> paste-into-Desmos text (recommended). latex for display.
+// ---------- Single-formula mode (Yeganeh-style, cf. unk1911/math-drawings) ----------
+// Builds ONE implicit equation f(x,y)=T whose zero level-set traces the outline.
+// f is a sum of Gaussian bumps centered on sampled contour points:
+//   f(x,y) = Σ e^(-((x-xi)^2+(y-yi)^2)/S)
+// Paste the single line into Desmos; it renders the whole drawing at once.
+// This mirrors the reference repo's idea (per-pixel closed-form H(x,y) with
+// exp/trig terms) but fitted automatically to the uploaded image's contours.
+function contoursToImplicitFormula(layers, opts) {
+  const o = Object.assign({ maxTerms: 120, sigma: 0.18, level: 0.5 }, opts || {});
+  const pts = [];
+  (layers || []).forEach((L) => {
+    (L.contoursNorm || []).forEach((c) => {
+      for (let i = 0; i < c.length; i++) pts.push(c[i]);
+    });
+  });
+  if (!pts.length) return "";
+  const stride = Math.max(1, Math.ceil(pts.length / o.maxTerms));
+  const sampled = [];
+  for (let i = 0; i < pts.length; i += stride) sampled.push(pts[i]);
+  const S = fmt(o.sigma * o.sigma, 5);
+  const sub = (v, name) => (Number(fmt(v)) < 0 ? `(${name}+${fmt(-v)})` : `(${name}-${fmt(v)})`);
+  const terms = sampled.map((p) => `e^(-(${sub(p.x, "x")}^2+${sub(p.y, "y")}^2)/${S})`);
+  return `${terms.join("+")}=${fmt(o.level)}`;
+}
 function equationsToText(equations, opts) {
   return equations.map((e) => equationToDesmos(e, opts)).join("\n");
 }
@@ -90,7 +113,7 @@ function buildProjectFile(settings, layers, equations, stats) {
 }
 
 const EX = {
-  fmt, equationToDesmos, equationsToText, buildProjectFile,
+  fmt, equationToDesmos, equationsToText, buildProjectFile, contoursToImplicitFormula,
   polygonToDesmosPlain, bezierToDesmos, lineToDesmosPlain, circleToDesmos,
 };
 if (typeof module !== "undefined" && module.exports) module.exports = EX;

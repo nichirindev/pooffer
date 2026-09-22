@@ -95,7 +95,13 @@
       <button class="ghost small" id="dlJson" disabled>.json</button>
       <button class="ghost small" id="dlProj" disabled>.desmosimg</button>
     </div>
-    <div class="hint" style="margin:8px 0">Single box — paste the whole thing into Desmos at <code>desmos.com/calculator</code> (it splits into lines). Format: <code>y=... {a&lt;=x&lt;=b}</code>, circles, <code>(x(t),y(t)) {0&lt;=t&lt;=1}</code>, <code>polygon(...)</code>.</div>
+    <div class="row"><label class="lbl">Equation format</label>
+      <select id="eqFormat">
+        <option value="multi" selected>Contours (multi-line box)</option>
+        <option value="formula">Single formula f(x,y)=c (1 line)</option>
+      </select>
+    </div>
+    <div class="hint" style="margin:8px 0">Single box — paste the whole thing into Desmos at <code>desmos.com/calculator</code> (it splits into lines). Format: <code>y=... {a&lt;=x&lt;=b}</code>, circles, <code>(x(t),y(t)) {0&lt;=t&lt;=1}</code>, <code>polygon(...)</code>.<br/>Single-formula mode emits <b>one</b> implicit line <code>Σ e^(-((x-xi)^2+(y-yi)^2)/S)=0.5</code> in the spirit of <a href="https://github.com/unk1911/math-drawings" target="_blank" style="color:#7db3ff">unk1911/math-drawings</a> (Yeganeh-style per-pixel formulas).</div>
     <textarea id="eqBox" readonly placeholder="No equations yet — process an image first."></textarea>
     <div class="hint" id="eqInfo">–</div>
     <h2 style="margin-top:14px">How to paste into Desmos</h2>
@@ -104,6 +110,7 @@
       <li>Open <b>desmos.com/calculator</b>.</li>
       <li>Click the first empty expression line and <b>paste (Ctrl+V)</b> — Desmos creates one line per row.</li>
       <li>For <b>Color</b> mode: select each pasted line's color dot and match the hex shown at the end of the line's layer (see .txt download for color map).</li>
+      <li>Single-formula mode: paste into <b>one</b> expression line (it renders as an implicit curve, slower on large images).</li>
       <li>Zoom out / press <b>⌂</b> — art lives in −10…10.</li>
     </ol>
   </section>

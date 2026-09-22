@@ -349,9 +349,24 @@ function quantizeColors(rgba, w, h, k, maxSamples) {
   const step = Math.max(1, Math.floor(n / (maxSamples || 8000)));
   const samples = [];
   for (let i = 0; i < n; i += step) samples.push([rgba[i * 4], rgba[i * 4 + 1], rgba[i * 4 + 2]]);
-  // init centers via evenly spaced samples
-  const centers = [];
-  for (let c = 0; c < k; c++) centers.push(samples[Math.floor((c * samples.length) / k)].slice());
+  // k-means++ style seeding: each new center is the sample farthest from
+  // the centers chosen so far (evenly-spaced init collapses on banded images)
+  const dist2 = (a, b) => {
+    const dx = a[0] - b[0], dy = a[1] - b[1], dz = a[2] - b[2];
+    return dx * dx + dy * dy + dz * dz;
+  };
+  const centers = [samples[0].slice()];
+  while (centers.length < k) {
+    let bi = -1, bd = 0;
+    for (let i = 0; i < samples.length; i++) {
+      let md = 1e18;
+      for (const c of centers) { const d = dist2(samples[i], c); if (d < md) md = d; }
+      if (md > bd) { bd = md; bi = i; }
+    }
+    if (bi < 0 || bd <= 0) break; // no distinct color left
+    centers.push(samples[bi].slice());
+  }
+  while (centers.length < k) centers.push(samples[centers.length % samples.length].slice());
   const assign = new Array(samples.length).fill(0);
   for (let iter = 0; iter < 8; iter++) {
     const sums = centers.map(() => [0, 0, 0, 0]);
@@ -366,7 +381,18 @@ function quantizeColors(rgba, w, h, k, maxSamples) {
       sums[best][0] += samples[i][0]; sums[best][1] += samples[i][1]; sums[best][2] += samples[i][2]; sums[best][3]++;
     }
     for (let c = 0; c < k; c++) {
-      if (sums[c][3] > 0) centers[c] = [sums[c][0] / sums[c][3], sums[c][1] / sums[c][3], sums[c][2] / sums[c][3]];
+      if (sums[c][3] > 0) {
+        centers[c] = [sums[c][0] / sums[c][3], sums[c][1] / sums[c][3], sums[c][2] / sums[c][3]];
+      } else {
+        // rescue dead cluster: re-seed at the sample farthest from all centers
+        let bi = 0, bd = -1;
+        for (let i = 0; i < samples.length; i++) {
+          let md = 1e18;
+          for (const cc of centers) { const d = dist2(samples[i], cc); if (d < md) md = d; }
+          if (md > bd) { bd = md; bi = i; }
+        }
+        centers[c] = samples[bi].slice();
+      }
     }
   }
   // assign every pixel

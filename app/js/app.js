@@ -12,6 +12,8 @@
     settings: {},
     layers: [],          // {color, contoursNorm, contoursPx}
     equations: [],       // IR + {desmos}
+    formula: "",         // single implicit equation f(x,y)=c (Yeganeh-style)
+    formulaTerms: 0,
     intermediates: {},   // canvases per stage
     procW: 0, procH: 0,
     stats: {},
@@ -183,7 +185,6 @@
 
   function drawOriginal() {
     const c = document.createElement("canvas");
-    const s = readSettings();
     const sc = Math.min(1, 480 / Math.max(state.imgW, state.imgH));
     c.width = Math.round(state.imgW * sc); c.height = Math.round(state.imgH * sc);
     c.getContext("2d").drawImage(state.img, 0, 0, c.width, c.height);
@@ -225,7 +226,6 @@
       const eps = 0.02 + (s.tolerance / 100) * 0.35; // graph units
       const minLen = Math.max(6, Math.round(Math.max(w, h) * 0.02));
       const preferCurves = s.model !== "lines";
-      const perLayerBudget = s.maxEquations;
       state.layers = [];
       let allContoursPx = [];
 
@@ -303,6 +303,12 @@
       equations = equations.slice(0, budget);
       equations.forEach((e, i) => { e.id = i; e.desmos = EX.equationToDesmos(e, { plain: true }); });
       state.equations = equations;
+      // Single-formula mode: one implicit equation over sampled contour points.
+      // Cap terms so Desmos stays responsive (120 gaussian bumps ≈ one line).
+      try {
+        state.formula = EX.contoursToImplicitFormula(state.layers, { maxTerms: 120, sigma: 0.18, level: 0.5 });
+        state.formulaTerms = state.formula ? state.formula.split("e^(").length - 1 : 0;
+      } catch (e) { state.formula = ""; state.formulaTerms = 0; }
 
       const t1 = performance.now();
       const err = totalIn ? 1 - totalSimp / totalIn : 0;
@@ -381,6 +387,19 @@
 
   function renderSingleBox() {
     const box = $("eqBox");
+    const mode = $("eqFormat").value;
+    if (mode === "formula") {
+      $("eqCount").textContent = state.formula ? "(1)" : "";
+      if (!state.formula) {
+        box.value = "";
+        box.placeholder = "No equations yet — process an image first.";
+        $("eqInfo").textContent = "–";
+        return;
+      }
+      box.value = state.formula;
+      $("eqInfo").textContent = `1 line · ${state.formulaTerms} gaussian terms · ${state.formula.length.toLocaleString()} chars · paste into a single Desmos line`;
+      return;
+    }
     $("eqCount").textContent = `(${state.equations.length})`;
     if (!state.equations.length) {
       box.value = "";
@@ -413,13 +432,16 @@
   function copyAll() {
     const text = boxText();
     if (!text) { setStatus("Nothing to copy — process an image first."); return; }
-    const n = state.equations.length;
+    const n = $("eqFormat").value === "formula" ? 1 : state.equations.length;
     copyText(text, () => {
-      setStatus(`Copied ${n} lines. Paste once into Desmos — it splits into lines.`);
+      setStatus(n === 1
+        ? "Copied 1 formula line. Paste into a single Desmos expression."
+        : `Copied ${n} lines. Paste once into Desmos — it splits into lines.`);
       $("eqBox").select();
     });
   }
   $("copyAll").addEventListener("click", copyAll);
+  $("eqFormat").addEventListener("change", () => { renderSingleBox(); });
   $("eqBox").addEventListener("click", (e) => { e.target.select(); });
 
   function download(name, text, mime) {

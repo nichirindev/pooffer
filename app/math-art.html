@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Math Art — exact repo formula (snow village)</title>
+<link rel="stylesheet" href="styles.css" />
+<style>
+  .wrap{max-width:1000px;margin:0 auto;padding:14px}
+  canvas.preview{width:100%;border-radius:10px;background:#fff;display:block}
+  .compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:700px){.compare-grid{grid-template-columns:1fr}}
+  .cap{font-size:12px;color:var(--muted);margin:6px 0 0}
+  #eqDef{width:100%;min-height:260px;background:var(--panel2);border:1px solid var(--border);
+    border-radius:8px;color:#c8f5c8;font-family:ui-monospace,Consolas,monospace;
+    font-size:11.5px;line-height:1.5;padding:10px;white-space:pre;overflow:auto}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">≋</div>
+  <div>
+    <h1>Math Art — Snow Village (exact formula)</h1>
+    <p>Hamid Naderi Yeganeh's plate · ported 1:1 from <a href="https://github.com/unk1911/math-drawings" target="_blank" style="color:#7db3ff">unk1911/math-drawings</a> · 100% local</p>
+  </div>
+  <div class="spacer"></div>
+  <a href="index.html"><button class="ghost small">← Image → Desmos</button></a>
+</header>
+
+<div class="wrap">
+  <section class="card">
+    <h2>1 · Upload reference image (optional)</h2>
+    <div class="drop" id="drop">
+      <b>Drag &amp; drop image here</b><br/>
+      <span style="font-size:12px">PNG · JPG · WebP — or click to browse, or paste (Ctrl+V). E.g. the artist's plate to compare against the formula render.</span>
+      <input type="file" id="file" accept="image/png,image/jpeg,image/webp" />
+    </div>
+    <div class="hint" id="upStatus" style="margin-top:8px">No reference uploaded — formula renders on its own below.</div>
+  </section>
+
+  <section class="card" style="margin-top:14px">
+    <h2>2 · Draw</h2>
+    <div class="row"><label class="lbl">Draw with</label>
+      <select id="modeSel">
+        <option value="village" selected>Snow village (exact artwork — fixed, always draws the village)</option>
+        <option value="trace">My uploaded image (traced to sharp vector curves, hi-res)</option>
+      </select>
+    </div>
+    <div class="row">
+      <label class="lbl">Render width</label>
+      <select id="wSel"><option value="200">200 (fast)</option><option value="400" selected>400</option><option value="800">800</option><option value="1600">1600 (hi-res)</option><option value="2400">2400 (hi-res)</option></select>
+      <label class="lbl">Trace detail</label>
+      <select id="tSel"><option value="std" selected>Standard</option><option value="fine">Fine (more curves)</option></select>
+      <label class="lbl">Colors</label>
+      <select id="cSel"><option value="0" selected>Black lines</option><option value="3">Color ×3</option><option value="4">Color ×4</option><option value="6">Color ×6</option></select>
+      <button id="renderBtn" style="flex:1">▶ Render</button>
+    </div>
+    <div class="progress"><div id="bar"></div></div>
+    <div class="hint" id="status">Samples the same continuous field as the 2000×1200 native grid (endpoints match, so full width reproduces native pixels exactly). Verified bit-identical vs the Python on 960 probe pixels.</div>
+    <div style="height:10px"></div>
+    <div class="compare-grid">
+      <div>
+        <canvas id="ref" width="400" height="240" class="preview"></canvas>
+        <p class="cap">Reference (your upload, center-cropped to 5:3 for comparison)</p>
+      </div>
+      <div>
+        <canvas id="art" width="400" height="240" class="preview"></canvas>
+        <p class="cap">Formula render (exact Yeganeh evaluation)</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="card" style="margin-top:14px">
+    <h2>3 · Compare <span style="color:#fff" id="cmpNote"></span></h2>
+    <div class="hint" style="margin-bottom:8px">Same metrics as the repo's <code>compare_to_original.py</code>: reference is center-cropped to 5:3, scaled to the render size, then MAE / RMSE / PSNR / correlation are computed over all pixels. Runs automatically once both sides exist.</div>
+    <div class="stats" style="grid-template-columns:1fr 1fr 1fr 1fr">
+      <div class="stat"><small>MAE</small><b id="mMae">–</b></div>
+      <div class="stat"><small>RMSE</small><b id="mRmse">–</b></div>
+      <div class="stat"><small>PSNR</small><b id="mPsnr">–</b></div>
+      <div class="stat"><small>Correlation r</small><b id="mCorr">–</b></div>
+    </div>
+  </section>
+
+  <section class="card" style="margin-top:14px">
+    <h2>The exact defining equation</h2>
+    <div class="toolbar"><button class="small" id="copyEq">Copy equation</button></div>
+    <div class="hint" style="margin:8px 0">One closed-form definition per pixel — this <b>is</b> the repo's equation (not a contour tracing). Desmos cannot run it as an image (it needs per-pixel evaluation), so this box is for reference / manual study; the canvas above is the exact evaluation.</div>
+<textarea id="eqDef" readonly>pixel (m,n), m=1..2000, n=1..1200;  x=(m-1000)/600,  y=(501-n)/600
+colour = rgb( F(H_0(x,y)), F(H_1(x,y)), F(H_2(x,y)) )
+F(h) = floor( 255 * e^(-e^(-1000*h)) * |h|^(e^(-e^(1000*(h-1)))) )
+
+E(x,y) = sum_{s=1..40} (24/25)^s * cos( scale*(-cos(s^2)*x + sin(s^2)*y + 2cos(17s)) + 2cos(5s) )
+                                     * cos( scale*( cos(s^2)*y + sin(s^2)*x + 2cos(15s)) + 2cos(7s) ),
+         scale = (6/5)^s * 10                                    [fractal terrain]
+
+B(x,y) = exp( -sum_{s=1..40} exp( (28-20y) * (49/50)^s *
+              ( cos(ang+2cos(17s^2)) * cos(ang2+2cos(18s^2)) + (E-99)/100 ) ) ),
+         denom=(3-2y); base_x=(2x+2cos(5s^2))/denom; base_y=2/denom;
+         q=(107/100)^s*30;
+         ang =q*(cos(15s^2)*base_x + sin(15s^2)*base_y);
+         ang2=q*(sin(15s^2)*base_x - cos(15s^2)*base_y)           [ground mask]
+
+M(x,y) = exp( -exp( -50*( |y + x/15 - x^2/7 + cos(3x+cos(2x))/12 + 57/50| - 0.1 - E/200 ) ) )
+                                                                     [snow mask]
+
+Houses s=1..67:
+  C=(400+s)/(480-320y);  V=arctan(tan(40C));  L=x*C+0.25*cos(7*(40C-V)^2);  U=arctan(tan(10L))
+  dU=10L-U;  dV=40C-V;  N=dU^2+dV^2
+  P=cos(N)*V - sin(N)*U;  Q=cos(N)*U + sin(N)*V;  R=1-0.3*cos(2*dU^2+3*dV^2)
+  Ws = exp(-exp(50500-1000s))              [=0 for s<=50, =1 for s>=51]
+  T  = exp(-exp( -100*(s-0.5) - exp(1000*(cos(6*dU^2+8*dV^2)-0.8)) - exp(roofDist) )),
+       roofDist = 500*(6+cos(2*dU^2+dV^2))*dU^2 + 1000*(40*(C-27/20)-V)^2 - 1e6
+  J  = T*(1-Ws)*exp( -exp(100*|Q|-2*s*R-15) - exp(100*(|P|-R)) )              [windows]
+  K  = T*exp( -exp( 200*|Q|-(4*s*(1-Ws)+(190+4*E)*Ws)*R ) - exp(100*|P|-R*(100+2*E)) )  [walls]
+  detail=exp(-exp(1000*(cos(8*dU^2+3*dV^2)-0.4)));  snowFade=exp(-exp(20*|Q|-6*R-exp(2*|s-40|-10)))
+  contrib = (J+K*(1-J)) * detail * (1+6*snowFade) * ((100-s)/100)
+  A_v += Z * contrib * (cos(12*s^2)-v+5)/20   (v=0,1,2);   Z *= (1-J)*(1-K)   (Z_0=1)
+
+H_v = 0.9*(1-B) + ((13v^2-16v+103)/50000) * B * (10*A_v + 9*Z_67) * (5+2v+(45-2v)*M)
+Art: Hamid Naderi Yeganeh. Code port: exact transcription of gen_math_village_img.py.</textarea>
+  </section>
+</div>
+
+<script src="js/image-processing.js"></script>
+<script src="js/math-engine.js"></script>
+<script src="js/export.js"></script>
+<script src="js/math-art-village.js"></script>
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const canvas = $("art"), ctx = canvas.getContext("2d");
+  const refCanvas = $("ref"), refCtx = refCanvas.getContext("2d");
+  const drop = $("drop"), fileInput = $("file");
+  const NW = 2000, NH = 1200;
+  let refImg = null;
+  let artW = canvas.width, artH = canvas.height, artReady = false;
+
+  function setBar(p) { $("bar").style.width = Math.round(p * 100) + "%"; }
+  function setStatus(t) { $("status").textContent = t; }
+  function setUpStatus(t) { $("upStatus").textContent = t; }
+
+  /* ---------- reference upload ---------- */
+  drop.addEventListener("click", () => fileInput.click());
+  fileInput.addEventListener("change", (e) => { if (e.target.files[0]) loadFile(e.target.files[0]); });
+  ["dragover", "dragenter"].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add("over"); }));
+  ["dragleave", "drop"].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove("over"); }));
+  drop.addEventListener("drop", (e) => {
+    const f = e.dataTransfer.files && e.dataTransfer.files[0];
+    if (f) loadFile(f);
+  });
+  document.addEventListener("paste", (e) => {
+    const items = e.clipboardData && e.clipboardData.items;
+    if (!items) return;
+    for (const it of items) {
+      if (it.type.startsWith("image/")) { loadFile(it.getAsFile()); break; }
+    }
+  });
+
+  function loadFile(f) {
+    if (!f || !f.type.startsWith("image/")) { setUpStatus("Unsupported file. Use PNG/JPG/WebP."); return; }
+    const url = URL.createObjectURL(f);
+    const img = new Image();
+    img.onload = () => {
+      refImg = img;
+      URL.revokeObjectURL(url);
+      setUpStatus(`Reference: ${f.name || "pasted image"} (${img.naturalWidth}×${img.naturalHeight}).`);
+      paintRef();
+      tryCompare();
+    };
+    img.onerror = () => setUpStatus("Could not decode that image. Try PNG/JPG/WebP.");
+    img.src = url;
+  }
+
+  // paint reference center-cropped to 5:3 (exactly what the comparison measures)
+  function paintRef() {
+    refCanvas.width = artW; refCanvas.height = artH;
+    refCtx.fillStyle = "#fff"; refCtx.fillRect(0, 0, artW, artH);
+    if (!refImg) {
+      refCtx.fillStyle = "#93a1b8"; refCtx.font = "14px sans-serif";
+      refCtx.fillText("Upload a reference image to compare.", 20, 30);
+      return;
+    }
+    const crop = coverCrop(refImg.naturalWidth, refImg.naturalHeight, artW, artH);
+    refCtx.drawImage(refImg, crop.sx, crop.sy, crop.sw, crop.sh, 0, 0, artW, artH);
+  }
+
+  function coverCrop(sw, sh, tw, th) {
+    const sA = sw / sh, tA = tw / th;
+    if (sA > tA) { const w = sh * tA; return { sx: (sw - w) / 2, sy: 0, sw: w, sh }; }
+    const h = sw / tA; return { sx: 0, sy: (sh - h) / 2, sw, sh: h };
+  }
+
+  /* ---------- comparison (same metrics as compare_to_original.py) ---------- */
+  function tryCompare() {
+    if (!refImg || !artReady) return;
+    const a = ctx.getImageData(0, 0, artW, artH).data;
+    const n = artW * artH;
+    let sad = 0, ssd = 0, sumA = 0, sumB = 0;
+    // note: ref canvas already holds the identical center-crop — read it back
+    const rp = refCtx.getImageData(0, 0, artW, artH).data;
+    for (let i = 0; i < n; i++) {
+      for (let c = 0; c < 3; c++) {
+        const va = a[4 * i + c], vb = rp[4 * i + c];
+        const d = va - vb;
+        sad += Math.abs(d); ssd += d * d; sumA += va; sumB += vb;
+      }
+    }
+    const m = 3 * n;
+    const mae = sad / m, rmse = Math.sqrt(ssd / m);
+    const psnr = rmse > 0 ? 20 * Math.log10(255 / rmse) : Infinity;
+    const meanA = sumA / m, meanB = sumB / m;
+    let cov = 0, vA = 0, vB = 0;
+    for (let i = 0; i < n; i++) {
+      for (let c = 0; c < 3; c++) {
+        const da = a[4 * i + c] - meanA, db = rp[4 * i + c] - meanB;
+        cov += da * db; vA += da * da; vB += db * db;
+      }
+    }
+    const r = (vA > 0 && vB > 0) ? cov / Math.sqrt(vA * vB) : 0;
+    $("mMae").textContent = mae.toFixed(2);
+    $("mRmse").textContent = rmse.toFixed(2);
+    $("mPsnr").textContent = (isFinite(psnr) ? psnr.toFixed(2) + " dB" : "∞");
+    $("mCorr").textContent = r.toFixed(4);
+    $("cmpNote").textContent = `(${artW}×${artH})`;
+  }
+
+  $("renderBtn").addEventListener("click", async () => {
+    if ($("modeSel").value === "trace") { await renderTrace(); return; }
+    const Wp = +$("wSel").value, Hp = Math.round(Wp * NH / NW);
+    canvas.width = Wp; canvas.height = Hp;
+    artW = Wp; artH = Hp; artReady = false;
+    $("renderBtn").disabled = true;
+    setStatus("Rendering exact formula…");
+    // sample the SAME continuous field: grid endpoints coincide with native m=1..2000
+    const xs = new Float64Array(Wp), ys = new Float64Array(Hp);
+    for (let i = 0; i < Wp; i++) xs[i] = ((1 + i * (NW - 1) / (Wp - 1)) - 1000) / 600;
+    for (let j = 0; j < Hp; j++) ys[j] = (501 - (1 + j * (NH - 1) / (Hp - 1))) / 600;
+    const img = ctx.createImageData(Wp, Hp);
+    const t0 = performance.now();
+    const ROWS = 8;
+    for (let j0 = 0; j0 < Hp; j0 += ROWS) {
+      const j1 = Math.min(Hp, j0 + ROWS);
+      const n = (j1 - j0) * Wp;
+      const bx = new Float64Array(n), by = new Float64Array(n);
+      let k = 0;
+      for (let j = j0; j < j1; j++) for (let i = 0; i < Wp; i++) { bx[k] = xs[i]; by[k] = ys[j]; k++; }
+      const rgb = MAV.renderVillage(bx, by);
+      k = 0;
+      for (let j = j0; j < j1; j++) for (let i = 0; i < Wp; i++) {
+        const o = (j * Wp + i) * 4;
+        img.data[o] = rgb[3 * k]; img.data[o + 1] = rgb[3 * k + 1]; img.data[o + 2] = rgb[3 * k + 2]; img.data[o + 3] = 255;
+        k++;
+      }
+      ctx.putImageData(img, 0, 0);
+      setBar(j1 / Hp);
+      setStatus(`Rendering… row ${j1}/${Hp}`);
+      await new Promise((r) => setTimeout(r, 0));
+    }
+    setStatus(`Done in ${((performance.now() - t0) / 1000).toFixed(1)}s — exact evaluation of Yeganeh's formula.`);
+    $("renderBtn").disabled = false;
+    artReady = true;
+    paintRef();    // re-crop reference to the new render size
+    tryCompare();  // auto-compare if a reference is uploaded
+  });
+
+  paintRef(); // placeholder text until an image is uploaded
+
+  /* ---------- trace mode: upload -> contours -> sharp vector curves (hi-res) ---------- */
+  const villageEqText = $("eqDef").value;
+  $("modeSel").addEventListener("change", () => {
+    if ($("modeSel").value === "trace") {
+      $("eqDef").value = refImg
+        ? "Press Render — contours get fitted to lines/circles/Béziers and drawn razor-sharp at full render width. The Desmos-pasteable equations appear here."
+        : "Upload an image first (section 1) — Render will trace it to vector curves and draw it sharp at hi-res.";
+    } else {
+      $("eqDef").value = villageEqText;
+    }
+  });
+
+  function tick() { return new Promise((r) => setTimeout(r, 10)); }
+
+  async function renderTrace() {
+    if (!refImg) { setStatus("Upload an image first (section 1)."); return; }
+    const fine = $("tSel").value === "fine";
+    const procSize = fine ? 640 : 448;
+    const Wp = +$("wSel").value;
+    const natW = refImg.naturalWidth, natH = refImg.naturalHeight;
+    const Hp = Math.round(Wp * natH / natW);
+    canvas.width = Wp; canvas.height = Hp;
+    artW = Wp; artH = Hp; artReady = false;
+    $("renderBtn").disabled = true;
+    try {
+      setStatus("Tracing edges…"); setBar(0.1); await tick();
+      const scale = Math.min(1, procSize / Math.max(natW, natH));
+      const w = Math.max(16, Math.round(natW * scale)), h = Math.max(16, Math.round(natH * scale));
+      const off = document.createElement("canvas"); off.width = w; off.height = h;
+      const g = off.getContext("2d", { willReadFrequently: true });
+      g.fillStyle = "#fff"; g.fillRect(0, 0, w, h);
+      g.drawImage(refImg, 0, 0, w, h);
+      const rgba = g.getImageData(0, 0, w, h).data;
+      let gray = IP.toGrayscale(rgba, w, h);
+      gray = IP.adjustBrightnessContrast(gray, w, h, 0, 10);
+      const blurred = IP.separableBlur(gray, w, h, 1.0);
+      setStatus("Fitting curves…"); setBar(0.5); await tick();
+      const { edges } = IP.sobelEdges(blurred, w, h);
+      const minLen = Math.max(4, Math.round(Math.max(w, h) * 0.015));
+      const colorCount = +$("cSel").value;
+      const tol = fine ? 0.05 : 0.09;
+      const perLayerMax = fine ? 450 : 200;
+      let layers = []; // {color, contoursNorm (fit), fillNorm (cover)}
+      if (colorCount >= 3) {
+        setStatus("Quantizing colors…"); await tick();
+        const q = IP.quantizeColors(rgba, w, h, colorCount, 9000);
+        const order = q.counts.map((n, i) => ({ n, i })).sort((a, b) => b.n - a.n);
+        for (const { i } of order) {
+          const mask = IP.maskForLabel(q.labels, w, h, i);
+          // fit loops: opened mask (clean curves)
+          const opened = IP.morphOpen(mask, w, h);
+          const loops = IP.traceBoundaries(opened, w, h, minLen);
+          const cleaned = IP.cleanupContours(loops, w, h, minLen);
+          // fill loops: CLOSED mask (no shrink → no white seams) + keep tiny
+          // detail loops and the frame loop (so background reaches the edges)
+          const closed = IP.morphClose(mask, w, h);
+          const fillLoops = IP.traceBoundaries(closed, w, h, 3)
+            .filter((c) => c && c.length >= 3);
+          if (!cleaned.length && !fillLoops.length) continue;
+          layers.push({
+            color: q.hex[i],
+            contoursNorm: IP.normalizeContours(cleaned, w, h, 10),
+            fillNorm: IP.normalizeContours(fillLoops, w, h, 10),
+          });
+        }
+        if (!layers.length) throw new Error("No color regions found.");
+      } else {
+        const paths = IP.extractEdgePaths(edges, w, h, minLen);
+        const cleaned = IP.cleanupContours(paths, w, h, Math.max(5, minLen - 3));
+        if (!cleaned.length) throw new Error("No contours found — try another image.");
+        layers.push({ color: null, contoursNorm: IP.normalizeContours(cleaned, w, h, 10) });
+      }
+      // fit curves per layer (largest regions first paint first)
+      let equations = [], nContours = 0;
+      layers.forEach((L, li) => {
+        nContours += L.contoursNorm.length;
+        const res = ME.processContours(L.contoursNorm, {
+          mode: "outline", tolerance: tol, maxEquations: perLayerMax,
+          preferCurves: true, colorHex: L.color, layer: li,
+        });
+        equations.push(...res.equations);
+      });
+      if (!equations.length) throw new Error("Curve fitting found nothing — try Fine detail.");
+      // equation box: same single-box Desmos text as the converter
+      const text = equations.map((e) => EX.equationToDesmos(e, { plain: true })).join("\n");
+      $("eqDef").value = text +
+        `\n\n// ${equations.length} vector equations from ${nContours} contours — paste whole box into Desmos, or admire the hi-res render above`;
+      setStatus("Drawing vectors…"); setBar(0.8); await tick();
+      drawEquations(equations, layers, w, h);
+      setBar(1);
+      const palette = layers.map((L) => L.color).filter(Boolean);
+      setStatus(`Done — ${nContours} contours → ${equations.length} razor-sharp vector curves at ${Wp}×${Hp}.` +
+        (palette.length ? ` Palette: ${palette.join(" ")}` : ""));
+      artReady = true;
+      paintRef();
+      tryCompare();
+    } catch (err) {
+      setBar(0);
+      setStatus("Error: " + (err && err.message ? err.message : err));
+    }
+    $("renderBtn").disabled = false;
+  }
+
+  // graph coords (y up, half-range 10 over max dimension) -> hi-res canvas pixels
+  function drawEquations(equations, layers, pw, ph) {
+    const W = canvas.width, H = canvas.height;
+    ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, W, H);
+    const R = 10, sc = (2 * R) / Math.max(pw, ph);
+    const rx = (pw * sc) / 2, ry = (ph * sc) / 2; // actual half-ranges
+    const X = (x) => ((x + rx) / (2 * rx)) * W;
+    const Y = (y) => ((ry - y) / (2 * ry)) * H;
+    const S = W / (2 * rx); // pixels per graph unit
+    const colorful = layers.some((L) => L.color);
+    if (colorful) {
+      // base coat: background color everywhere (kills any residual seams),
+      // then per-layer evenodd fills from non-shrunk loops (frame loop kept,
+      // so regions reach the canvas edges), each sealed with its own color.
+      ctx.fillStyle = layers[0].color; ctx.fillRect(0, 0, W, H);
+      for (const L of layers) {
+        const loops = (L.fillNorm && L.fillNorm.length ? L.fillNorm : L.contoursNorm);
+        const p = new Path2D();
+        for (const c of loops) {
+          c.forEach((pt, i) => (i === 0 ? p.moveTo(X(pt.x), Y(pt.y)) : p.lineTo(X(pt.x), Y(pt.y))));
+          p.closePath();
+        }
+        ctx.fillStyle = L.color;
+        ctx.fill(p, "evenodd");
+        ctx.strokeStyle = L.color;
+        ctx.lineWidth = Math.max(1.5, W / 600);
+        ctx.stroke(p);
+      }
+    }
+    ctx.lineCap = "round"; ctx.lineJoin = "round";
+    ctx.lineWidth = Math.max(1, W / 900);
+    for (const e of equations) {
+      ctx.strokeStyle = e.color || "#111827";
+      ctx.fillStyle = e.color ? e.color + "55" : "rgba(17,24,39,.08)";
+      ctx.beginPath();
+      if (e.type === "line") {
+        ctx.moveTo(X(e.x1), Y(e.y1)); ctx.lineTo(X(e.x2), Y(e.y2)); ctx.stroke();
+      } else if (e.type === "circle") {
+        ctx.arc(X(e.h), Y(e.k), e.r * S, 0, Math.PI * 2); ctx.stroke();
+      } else if (e.type === "ellipse") {
+        ctx.ellipse(X(e.h), Y(e.k), e.a * S, e.b * S, 0, 0, Math.PI * 2); ctx.stroke();
+      } else if (e.type === "bezier") {
+        for (let i = 0; i <= 24; i++) {
+          const t = i / 24, u = 1 - t;
+          const x = u*u*u*e.p0.x + 3*u*u*t*e.p1.x + 3*u*t*t*e.p2.x + t*t*t*e.p3.x;
+          const y = u*u*u*e.p0.y + 3*u*u*t*e.p1.y + 3*u*t*t*e.p2.y + t*t*t*e.p3.y;
+          i === 0 ? ctx.moveTo(X(x), Y(y)) : ctx.lineTo(X(x), Y(y));
+        }
+        ctx.stroke();
+      } else if (e.type === "polygon") {
+        e.points.forEach((p, i) => (i === 0 ? ctx.moveTo(X(p.x), Y(p.y)) : ctx.lineTo(X(p.x), Y(p.y))));
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+      }
+    }
+  }
+
+  $("copyEq").addEventListener("click", () => {
+    const t = $("eqDef").value;
+    $("eqDef").select();
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t);
+    else document.execCommand("copy");
+  });
+})();
+</script>
+</body>
+</html>

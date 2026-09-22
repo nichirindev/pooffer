@@ -38,17 +38,10 @@ canvas.preview{width:100%;border-radius:10px;background:#fff;display:block}
 .stat{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:8px}
 .stat small{color:var(--muted);display:block;font-size:10px;text-transform:uppercase;letter-spacing:.06em}
 .stat b{font-size:15px}
-.eq{border:1px solid var(--border);border-radius:8px;padding:8px;margin:7px 0;background:var(--panel2);font-size:12px}
-.eq code{display:block;white-space:pre-wrap;word-break:break-all;color:#c8f5c8;font-size:11.5px;margin:6px 0;max-height:66px;overflow:auto}
-.eq .meta{display:flex;gap:6px;align-items:center}
-.badge{font-size:10px;padding:2px 7px;border-radius:12px;background:#1e293b;color:#cbd5e1}
-.badge.circle{background:#7c3aed}.badge.bezier{background:#0369a1}.badge.line{background:#475569}.badge.polygon{background:#15803d}.badge.ellipse{background:#b45309}
-.dot{width:12px;height:12px;border-radius:50%;display:inline-block;border:1px solid #0003}
 .progress{height:8px;background:var(--panel2);border-radius:6px;overflow:hidden;border:1px solid var(--border);margin:8px 0}
 .progress>div{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .2s}
 .hint{font-size:12px;color:var(--muted);line-height:1.5}
 ol.hint{padding-left:18px}
-.hidden{display:none!important}
 #eqBox{width:100%;min-height:420px;max-height:520px;background:var(--panel2);border:1px solid var(--border);border-radius:8px;color:#c8f5c8;font-family:ui-monospace,Consolas,monospace;font-size:11.5px;line-height:1.5;padding:10px;white-space:pre;overflow:auto;resize:vertical}
 #eqBox:focus{outline:1px solid var(--accent)}
 #eqInfo{margin-top:6px}
