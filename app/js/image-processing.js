@@ -344,7 +344,7 @@ function normalizeContours(contours, w, h, range) {
 /* ---------- color quantization (simple k-means on sampled pixels) ---------- */
 
 function quantizeColors(rgba, w, h, k, maxSamples) {
-  k = Math.min(12, Math.max(2, k | 0 || 4));
+  k = Math.min(32, Math.max(2, k | 0 || 4));
   const n = w * h;
   const step = Math.max(1, Math.floor(n / (maxSamples || 8000)));
   const samples = [];
