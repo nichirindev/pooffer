@@ -3,32 +3,33 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Math Art — exact repo formula (snow village)</title>
+<title>Math Art — Snow Village</title>
 <link rel="stylesheet" href="styles.css" />
 <style>
-  .wrap{max-width:1000px;margin:0 auto;padding:14px}
-  canvas.preview{width:100%;border-radius:10px;background:#fff;display:block}
+  .wrap{max-width:1100px;margin:0 auto;padding:18px}
+  canvas.preview{width:100%;border-radius:2px;background:#fff;display:block;border:1px solid var(--border)}
   .compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
   @media(max-width:700px){.compare-grid{grid-template-columns:1fr}}
-  .cap{font-size:12px;color:var(--muted);margin:6px 0 0}
-  #eqDef{width:100%;min-height:260px;background:var(--panel2);border:1px solid var(--border);
-    border-radius:8px;color:#c8f5c8;font-family:ui-monospace,Consolas,monospace;
+  .cap{font-size:10px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin:8px 0 0}
+  #eqDef{width:100%;min-height:260px;background:#000;border:1px solid var(--border);
+    border-radius:2px;color:var(--text);font-family:var(--font-mono);
     font-size:11.5px;line-height:1.5;padding:10px;white-space:pre;overflow:auto}
 </style>
 </head>
 <body>
 <header>
-  <div class="logo">≋</div>
-  <div>
-    <h1>Math Art — Snow Village (exact formula)</h1>
-    <p>Hamid Naderi Yeganeh's plate · ported 1:1 from <a href="https://github.com/unk1911/math-drawings" target="_blank" style="color:#7db3ff">unk1911/math-drawings</a> · 100% local</p>
+  <div class="badge">≋</div>
+  <div class="titleblock">
+    <h1>Math Art <span class="thin">/ Snow Village</span></h1>
+    <p>Snow village by Hamid Naderi Yeganeh · 100% local</p>
   </div>
   <div class="spacer"></div>
+  <div class="meta">Local-first · No uploads</div>
 </header>
 
 <div class="wrap">
   <section class="card">
-    <h2>1 · Upload reference image (optional)</h2>
+    <h2><span class="n">01</span><span class="slash">//</span> Upload <em>reference image · optional</em></h2>
     <div class="drop" id="drop">
       <b>Drag &amp; drop image here</b><br/>
       <span style="font-size:12px">PNG · JPG · WebP — or click to browse, or paste (Ctrl+V). E.g. the artist's plate to compare against the formula render.</span>
@@ -38,7 +39,7 @@
   </section>
 
   <section class="card" style="margin-top:14px">
-    <h2>2 · Draw</h2>
+    <h2><span class="n">02</span><span class="slash">//</span> Draw</h2>
     <div class="row"><label class="lbl">Draw with</label>
       <select id="modeSel">
         <option value="village" selected>Snow village (exact artwork — fixed, always draws the village)</option>
@@ -55,7 +56,7 @@
       <button id="renderBtn" style="flex:1">▶ Render</button>
     </div>
     <div class="progress"><div id="bar"></div></div>
-    <div class="hint" id="status">Samples the same continuous field as the 2000×1200 native grid (endpoints match, so full width reproduces native pixels exactly). Verified bit-identical vs the Python on 960 probe pixels.</div>
+    <div class="hint" id="status">Samples the same continuous field as the 2000×1200 native grid (endpoints match, so full width reproduces native pixels exactly).</div>
     <div style="height:10px"></div>
     <div class="compare-grid">
       <div>
@@ -70,8 +71,8 @@
   </section>
 
   <section class="card" style="margin-top:14px">
-    <h2>3 · Compare <span style="color:#fff" id="cmpNote"></span></h2>
-    <div class="hint" style="margin-bottom:8px">Same metrics as the repo's <code>compare_to_original.py</code>: reference is center-cropped to 5:3, scaled to the render size, then MAE / RMSE / PSNR / correlation are computed over all pixels. Runs automatically once both sides exist.</div>
+    <h2><span class="n">03</span><span class="slash">//</span> Compare <em id="cmpNote"></em></h2>
+    <div class="hint" style="margin-bottom:8px">Reference is center-cropped to 5:3, scaled to the render size, then MAE / RMSE / PSNR / correlation are computed over all pixels. Runs automatically once both sides exist.</div>
     <div class="stats" style="grid-template-columns:1fr 1fr 1fr 1fr">
       <div class="stat"><small>MAE</small><b id="mMae">–</b></div>
       <div class="stat"><small>RMSE</small><b id="mRmse">–</b></div>
@@ -81,9 +82,9 @@
   </section>
 
   <section class="card" style="margin-top:14px">
-    <h2>The exact defining equation</h2>
+    <h2><span class="n">04</span><span class="slash">//</span> Defining equation</h2>
     <div class="toolbar"><button class="small" id="copyEq">Copy equation</button></div>
-    <div class="hint" style="margin:8px 0">One closed-form definition per pixel — this <b>is</b> the repo's equation (not a contour tracing). Desmos cannot run it as an image (it needs per-pixel evaluation), so this box is for reference / manual study; the canvas above is the exact evaluation.</div>
+    <div class="hint" style="margin:8px 0">One closed-form definition per pixel — this <b>is</b> the defining equation (not a contour tracing). Desmos cannot run it as an image (it needs per-pixel evaluation), so this box is for reference / manual study; the canvas above is the exact evaluation.</div>
 <textarea id="eqDef" readonly>pixel (m,n), m=1..2000, n=1..1200;  x=(m-1000)/600,  y=(501-n)/600
 colour = rgb( F(H_0(x,y)), F(H_1(x,y)), F(H_2(x,y)) )
 F(h) = floor( 255 * e^(-e^(-1000*h)) * |h|^(e^(-e^(1000*(h-1)))) )
@@ -116,9 +117,11 @@ Houses s=1..67:
   A_v += Z * contrib * (cos(12*s^2)-v+5)/20   (v=0,1,2);   Z *= (1-J)*(1-K)   (Z_0=1)
 
 H_v = 0.9*(1-B) + ((13v^2-16v+103)/50000) * B * (10*A_v + 9*Z_67) * (5+2v+(45-2v)*M)
-Art: Hamid Naderi Yeganeh. Code port: exact transcription of gen_math_village_img.py.</textarea>
+Art: Hamid Naderi Yeganeh.</textarea>
   </section>
 </div>
+
+<footer>Local-first <span class="dot">·</span> no uploads <span class="dot">·</span> exact evaluation <span class="dot">·</span> 2026</footer>
 
 <script src="js/image-processing.js"></script>
 <script src="js/math-engine.js"></script>
@@ -189,7 +192,7 @@ Art: Hamid Naderi Yeganeh. Code port: exact transcription of gen_math_village_im
     const h = sw / tA; return { sx: 0, sy: (sh - h) / 2, sw, sh: h };
   }
 
-  /* ---------- comparison (same metrics as compare_to_original.py) ---------- */
+  /* ---------- comparison ---------- */
   function tryCompare() {
     if (!refImg || !artReady) return;
     const a = ctx.getImageData(0, 0, artW, artH).data;
@@ -255,7 +258,7 @@ Art: Hamid Naderi Yeganeh. Code port: exact transcription of gen_math_village_im
       setStatus(`Rendering… row ${j1}/${Hp}`);
       await new Promise((r) => setTimeout(r, 0));
     }
-    setStatus(`Done in ${((performance.now() - t0) / 1000).toFixed(1)}s — exact evaluation of Yeganeh's formula.`);
+    setStatus(`Done in ${((performance.now() - t0) / 1000).toFixed(1)}s — exact evaluation of the formula.`);
     $("renderBtn").disabled = false;
     artReady = true;
     paintRef();    // re-crop reference to the new render size

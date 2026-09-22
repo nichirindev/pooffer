@@ -80,13 +80,13 @@ function equationToDesmos(eq, opts) {
   }
 }
 
-// ---------- Single-formula mode (Yeganeh-style, cf. unk1911/math-drawings) ----------
+// ---------- Single-formula mode ----------
 // Builds ONE implicit equation f(x,y)=T whose zero level-set traces the outline.
 // f is a sum of Gaussian bumps centered on sampled contour points:
 //   f(x,y) = Σ e^(-((x-xi)^2+(y-yi)^2)/S)
 // Paste the single line into Desmos; it renders the whole drawing at once.
-// This mirrors the reference repo's idea (per-pixel closed-form H(x,y) with
-// exp/trig terms) but fitted automatically to the uploaded image's contours.
+// Per-pixel closed-form H(x,y) with exp/trig terms,
+// fitted automatically to the uploaded image's contours.
 function contoursToImplicitFormula(layers, opts) {
   const o = Object.assign({ maxTerms: 120, sigma: 0.18, level: 0.5 }, opts || {});
   const pts = [];
