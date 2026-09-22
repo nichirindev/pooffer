@@ -1,22 +1,4 @@
-/* Exact port of unk1911/math-drawings snow village formula
- * (Hamid Naderi Yeganeh's "snow-covered village" plate).
- *
- * Pixel (m,n), m=1..2000, n=1..1200  ->  x=(m-1000)/600, y=(501-n)/600
- *   rgb( F(H_0(x,y)), F(H_1(x,y)), F(H_2(x,y)) )
- *   F(h) = floor( 255 * e^(-e^(-1000 h)) * |h|^(e^(-e^(1000 (h-1)))) )
- *
- * E(x,y)  : fractal terrain, 40 cosine terms, coeff (24/25)^s
- * B(x,y)  : background/ground mask, 40 terms, r=(49/50)^s, q=(107/100)^s*30
- * M(x,y)  : snow silhouette mask around snow_line
- * Houses s=1..67 : rotated local frame (C,V,L,U,P,Q,R), step Ws (0 for s<=50,
- *   1 above), occupancy T, windows J, walls K, detail/snow/window-boost masks,
- *   per-channel accumulators A_v with occlusion product Z (Z_0=1).
- * H_v = 0.9(1-B) + coeff_v * B * (10 A_v + 9 Z_67) * (5+2v+(45-2v) M)
- *
- * Pure: Float64Array in, Uint8Array out. No DOM. Runs in node and browsers.
- * Reference: C:/Users/Ayush/AppData/Local/Temp/opencode/math-drawings
- *   src/gen_math_village_img.py (verified pixel-identical, see probe test).
- */
+
 "use strict";
 
 function safeExp(z) {
