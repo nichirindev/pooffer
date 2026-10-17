@@ -71,3 +71,67 @@ ol.hint{padding-left:18px}
 .toolbar{display:flex;gap:8px;flex-wrap:wrap}
 footer{padding:20px 16px 28px;text-align:center;color:var(--faint);font-size:10px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.16em;border-top:1px solid var(--border-soft);margin-top:18px}
 footer .dot{color:var(--accent-hi)}
+
+/* ================= fluid motion layer (Nous aesthetic) ================= */
+html{scroll-behavior:smooth}
+::selection{background:var(--accent);color:#fff}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track{background:#000}
+::-webkit-scrollbar-thumb{background:#26262c;border:2px solid #000;border-radius:6px}
+::-webkit-scrollbar-thumb:hover{background:var(--accent)}
+
+/* fixed blueprint grid + drifting blue glow (parallax via --sy) */
+body::before{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
+  background-image:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px);
+  background-size:44px 44px;
+  transform:translateY(calc(var(--sy,0px)*.12));
+  mask-image:radial-gradient(ellipse 90% 70% at 50% 0%,#000 30%,transparent 75%)}
+body::after{content:"";position:fixed;z-index:-1;pointer-events:none;
+  width:60vmax;height:60vmax;left:50%;top:-30vmax;transform:translate(-50%,calc(var(--sy,0px)*.3));
+  background:radial-gradient(circle,rgba(0,0,242,.22) 0%,transparent 60%)}
+
+/* top scroll-progress hairline */
+#scrollbar{position:fixed;top:0;left:0;height:2px;width:0;z-index:50;
+  background:linear-gradient(90deg,var(--accent),var(--accent-hi));
+  box-shadow:0 0 12px rgba(0,242,242,.7)}
+
+/* header solidifies on scroll */
+header{transition:border-color .3s,background-color .3s}
+header.scrolled{border-bottom-color:var(--accent);background:rgba(0,0,0,.92);backdrop-filter:blur(8px)}
+
+/* scroll reveal */
+.rv{opacity:0;transform:translateY(22px);transition:opacity .7s ease,transform .7s cubic-bezier(.16,1,.3,1);transition-delay:var(--d,0s)}
+.rv.in{opacity:1;transform:none}
+
+/* marquee divider */
+.marq{overflow:hidden;border-top:1px solid var(--border);border-bottom:1px solid var(--border);
+  margin:18px 0;white-space:nowrap;user-select:none;background:#000}
+.marq .track{display:inline-block;padding:9px 0;animation:marq 28s linear infinite;
+  font-family:var(--font-mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted)}
+.marq .track b{color:var(--text);font-weight:400}
+.marq .track i{font-style:normal;color:var(--accent-hi);padding:0 14px}
+@keyframes marq{to{transform:translateX(-50%)}}
+
+/* micro-interactions */
+button{transition:transform .15s ease,filter .2s,box-shadow .25s,border-color .2s}
+button:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 4px 22px rgba(0,0,242,.45)}
+button:active:not(:disabled){transform:translateY(0)}
+.card{transition:border-color .3s,box-shadow .3s}
+.card:hover{border-color:#3a3a44;box-shadow:0 0 0 1px rgba(0,0,242,.25),0 12px 44px rgba(0,0,242,.12)}
+.card h2 .n{transition:background-color .3s,color .3s}
+.card:hover h2 .n{background:var(--accent);color:#fff}
+select,button,.drop,.tab,.mode{transition:border-color .2s,background-color .2s,transform .15s}
+.mode:hover{border-color:var(--muted)}
+.tab:hover{color:var(--text);border-color:var(--muted)}
+.drop{transition:border-color .25s,background-color .25s}
+#art{transition:opacity .35s ease}
+#art.busy{opacity:.45}
+.stat b{font-variant-numeric:tabular-nums}
+
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .rv{opacity:1;transform:none;transition:none}
+  .marq .track{animation:none}
+  *{transition-duration:.01ms !important;animation-duration:.01ms !important}
+}
